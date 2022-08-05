@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+  sender:
+    container_name: sender
+    ports:
+      - "3000:3000"
+    build:
+      context: .
+      dockerfile: Dockerfile-sender
+    environment:
+      AMQP_SERVER_URL: amqp://admin:admin@rabbitmq:5672/
+    restart: always
+    depends_on:
+      - rabbitmq
+
+  consumer:
+    container_name: consumer
+    build:
+      context: .
+      dockerfile: Dockerfile-consumer
+    environment:
+      AMQP_SERVER_URL: amqp://admin:admin@rabbitmq:5672/
+    restart: always
+    depends_on:
+      - sender
+      - rabbitmq
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:-admin}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS:-admin}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    restart: always
+    volumes:
+      - rabbitmq-etc:/etc/rabbitmq/
+      - rabbitmq-data:/var/lib/rabbitmq
+      - rabbitmq-log:/var/log/rabbitmq
+
+volumes:
+  rabbitmq-data:
+    driver: local
+  rabbitmq-log:
+    driver: local
+  rabbitmq-etc:
+    driver: local
+
